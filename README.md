@@ -93,3 +93,18 @@ python data_pipeline\build_outputs.py
 
 - 실행 순서: 6-2 → 6-3 (같은 날) → 6-4 → 6-5
 - `value`는 실제 검색수가 아니라 **추정치**입니다. 환산 근거와 오차 범위는 [docs/작업기록.md](docs/작업기록.md)의 U1-c를 참고합니다.
+
+## 7. 백엔드 실행 (backend)
+```
+pip install -r backend\requirements.txt
+Copy-Item backend\.env.example backend\.env
+```
+- 복사한 `backend\.env`의 `ALLOWED_ORIGINS=` 뒤에 허용할 프론트 주소를 씁니다(로컬 예: `http://localhost:5500,http://127.0.0.1:5500`).
+
+```
+cd backend
+uvicorn app.main:app --reload
+```
+- http://127.0.0.1:8000/docs → API 설명서, `GET /api/health` → `{"status": "ok"}`
+- 끄기: 터미널에서 **Ctrl+C**
+- uvicorn은 **backend 폴더 안에서** 실행해야 `app.main`을 찾습니다.
