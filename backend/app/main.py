@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
 from app.core.config import ALLOWED_ORIGINS
-from app.routers import data, health
+from app.routers import conversations, data, health
 
 app = FastAPI(
     title="검색 데이터 AI 비서 API",
@@ -29,6 +29,7 @@ app.add_middleware(
 # 라우터(창구) 연결 — 기능이 늘 때마다 여기에 한 줄씩 추가한다.
 app.include_router(health.router)
 app.include_router(data.router)
+app.include_router(conversations.router)
 
 
 # 맨 앞 주소(/)로 들어오면 API 설명서(/docs)로 보낸다.
