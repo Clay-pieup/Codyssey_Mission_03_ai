@@ -8,8 +8,9 @@ import datetime as dt
 from fastapi import APIRouter, HTTPException, Query, Response
 
 from app.schemas.data import DataIn, DataOut, GroupName
+from app.schemas.statistics import DataStatistics
 from app.schemas.summary import DataSummary
-from app.services import data_service, summary_service
+from app.services import data_service, statistics_service, summary_service
 from app.services.data_service import DataNotFoundError, DuplicateDataError
 
 router = APIRouter(prefix="/api/data", tags=["data"])
@@ -39,6 +40,12 @@ def list_data(
 def get_summary():
     """전체 + 6그룹의 기간·개수·합계·평균·최대·최소·추세. 서버가 최대 1시간 기억하고, 데이터가 바뀌면 다시 계산한다."""
     return summary_service.get_summary()
+
+
+@router.get("/statistics", response_model=DataStatistics, summary="★ 데이터 통계(연도·월별 합계, 점유율, 계절성)")
+def get_statistics():
+    """요약보다 자세한 지표. 요약과 같은 기억(원본 데이터)을 써서 Firestore 추가 읽기가 없다."""
+    return statistics_service.get_statistics()
 
 
 @router.put("/{data_id}", response_model=DataOut, summary="데이터 수정(통째로 교체)")

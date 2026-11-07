@@ -3,6 +3,8 @@ data 전체를 요약한다(전체 + 6그룹). 결과는 서버가 기억(캐시
 
 - 비용: 요약 1번 계산 = 문서 1,794개 읽기. 채팅마다 계산하면 무료 한도(하루 읽기 5만)가 금방 찬다.
 - 기억을 버리는 조건: ① 데이터가 바뀜(번호표가 달라짐) ② 1시간이 지남(서버 밖에서 바뀐 데이터 대비)
+- 기억에는 '원본 데이터'를 담는다. 요약과 통계(statistics_service)가 같은 원본으로 각자 계산하므로
+  둘 다 불러도 Firestore 읽기는 처음 한 번뿐이다.
 - 추세: 계절성이 강한 데이터라 '직전 기간'이 아니라 '전년 같은 기간'과 비교한다(최근 4주, 최근 12주).
 """
 import datetime as dt
@@ -19,7 +21,8 @@ ONE_YEAR = dt.timedelta(weeks=52)   # 52주 = 364일 → 요일(월요일)이 �
 KST = dt.timezone(dt.timedelta(hours=9), "KST")
 TOTAL_NAME = "전체(6그룹 합계)"
 
-_cache = {"summary": None, "version": None, "at": 0.0}
+# 기억 상자: 원본 데이터(rows)와 그걸로 계산한 결과들. 원본이 바뀌면 결과도 함께 비운다.
+_cache = {"rows": None, "loaded_at": None, "version": None, "at": 0.0, "summary": None, "statistics": None}
 
 
 def _pct_change(recent: int, before: int) -> float | None:
@@ -74,7 +77,7 @@ def summarize_series(name: str, weekly: dict, count: int) -> dict:
     }
 
 
-def build_summary(rows: list[dict]) -> dict:
+def build_summary(rows: list[dict], computed_at: dt.datetime) -> dict:
     """data 문서 목록 → 전체 + 그룹별 요약."""
     total_weekly = defaultdict(int)                        # 날짜 → 6그룹 합계
     group_weekly = defaultdict(lambda: defaultdict(int))   # 그룹 → (날짜 → 값)
@@ -89,20 +92,26 @@ def build_summary(rows: list[dict]) -> dict:
     # 그룹 순서를 정해 둔 6그룹 순서로 고정(Firestore는 무작위 ID 순서로 돌려주므로 그대로 두면 매번 순서가 바뀐다)
     order = [name for name in get_args(GroupName) if name in group_weekly]
     summary["groups"] = [summarize_series(name, group_weekly[name], group_count[name]) for name in order]
-    summary["computed_at"] = dt.datetime.now(KST)
+    summary["computed_at"] = computed_at
     return summary
 
 
-def get_summary() -> dict:
-    """기억이 쓸 만하면 그대로, 아니면 data 전체를 읽어 새로 계산한다."""
-    version = data_service.data_version()   # 읽기 '전'의 번호표를 기억해야, 계산 도중 바뀐 것도 다음에 잡아낸다
+def snapshot() -> dict:
+    """기억 상자를 돌려준다. 쓸 만하면 그대로, 아니면 data 전체를 다시 읽고 계산 결과를 비운다."""
+    version = data_service.data_version()   # 읽기 '전'의 번호표를 기억해야, 읽는 도중 바뀐 것도 다음에 잡아낸다
     fresh = (
-        _cache["summary"] is not None
+        _cache["rows"] is not None
         and _cache["version"] == version
         and time.monotonic() - _cache["at"] < CACHE_SECONDS
     )
-    if fresh:
-        return _cache["summary"]
-    summary = build_summary(data_service.read_all())
-    _cache.update(summary=summary, version=version, at=time.monotonic())
-    return summary
+    if not fresh:
+        _cache.update(rows=data_service.read_all(), loaded_at=dt.datetime.now(KST),
+                      version=version, at=time.monotonic(), summary=None, statistics=None)
+    return _cache
+
+
+def get_summary() -> dict:
+    cache = snapshot()
+    if cache["summary"] is None:
+        cache["summary"] = build_summary(cache["rows"], cache["loaded_at"])
+    return cache["summary"]
