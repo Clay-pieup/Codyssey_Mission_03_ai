@@ -6,6 +6,7 @@ FastAPI 앱의 시작점.
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 
 from app.core.config import ALLOWED_ORIGINS
 from app.routers import data, health
@@ -28,3 +29,10 @@ app.add_middleware(
 # 라우터(창구) 연결 — 기능이 늘 때마다 여기에 한 줄씩 추가한다.
 app.include_router(health.router)
 app.include_router(data.router)
+
+
+# 맨 앞 주소(/)로 들어오면 API 설명서(/docs)로 보낸다.
+# 배포 주소를 그대로 열었을 때 'Not Found' 대신 설명서가 보이게 하기 위함. 설명서 목록에는 넣지 않는다.
+@app.get("/", include_in_schema=False)
+def root():
+    return RedirectResponse(url="/docs")
