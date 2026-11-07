@@ -7,7 +7,7 @@
 | 항목 | 버전/내용 |
 |---|---|
 | OS | Windows 11 (개발) / Linux (Render 서버) |
-| Python | 3.14 (로컬 3.14.7, Render 3.14) |
+| Python | 3.14 (로컬 3.14.7, Render 3.14.10) |
 | Git | 필수 |
 
 ## 2. 준비할 계정·키
@@ -131,3 +131,27 @@ python -m scripts.seed_data
 - `data_pipeline/output/weekly_group.csv`(1,794건)를 Firestore `data` 컬렉션에 넣습니다.
 - `data` 컬렉션이 **비어 있을 때만** 실행됩니다(중복 방지).
 - 실행 순서: 6-5(CSV 생성) → 7(`backend/.env` 설정) → 9
+
+## 10. 백엔드 배포 (Render, U5)
+- 배포 주소: https://codyssey-ai-assistant-api.onrender.com (API 설명서: https://codyssey-ai-assistant-api.onrender.com/docs)
+
+| 항목 | 값 |
+|---|---|
+| Branch | `feature/ai-assistant` |
+| Root Directory | `backend` |
+| Region | Singapore |
+| Build Command | `pip install -r requirements.txt` |
+| Start Command | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
+| Instance Type | Free |
+| Health Check Path | `/api/health` |
+
+| 환경변수 | 값 |
+|---|---|
+| `ALLOWED_ORIGINS` | 허용할 프론트 주소(쉼표로 구분) |
+| `FIREBASE_SERVICE_ACCOUNT_PATH` | `/etc/secrets/firebase-service-account.json` |
+
+- **Secret Files:** 파일 이름 `firebase-service-account.json`, 내용 = 서비스 계정 키 JSON 전체. 파일 이름은 환경변수 경로의 끝과 같아야 합니다.
+- 파이썬 버전은 Render가 `backend/.python-version`(3.14)을 읽어 정합니다.
+- push하면 자동으로 다시 배포됩니다.
+- 무료 서버는 15분 동안 요청이 없으면 잠듭니다. 다음 첫 요청은 깨어나는 동안 약 30초 걸립니다(2026-11-07 측정 32.9초).
+- 무료여도 Render가 카드 등록(본인 확인)을 요구할 수 있습니다. Free 인스턴스 자체는 $0입니다.
