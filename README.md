@@ -108,3 +108,24 @@ uvicorn app.main:app --reload
 - http://127.0.0.1:8000/docs → API 설명서, `GET /api/health` → `{"status": "ok"}`
 - 끄기: 터미널에서 **Ctrl+C**
 - uvicorn은 **backend 폴더 안에서** 실행해야 `app.main`을 찾습니다.
+- `backend\.env`에 `FIREBASE_SERVICE_ACCOUNT_PATH=`(레포 밖 서비스 계정 키 파일의 전체 경로)를 씁니다.
+- Firestore 연결 시험(backend 폴더에서): `python -m scripts.check_firestore` → 1) 쓰기 2) 읽기 3) 삭제 성공이 나오면 정상
+
+## 8. 데이터 API (U3-2)
+| 요청 | 설명 | 성공 | 실패 |
+|---|---|---|---|
+| `POST /api/data` | 추가 `{date(월요일), value(0 이상 정수), memo(6그룹)}` | 201 | 409 중복, 422 규칙 위반 |
+| `GET /api/data` | 목록(최신순). `memo`·`date_from`·`date_to`·`limit`(1~500, 기본 50) | 200 | 422 |
+| `PUT /api/data/{id}` | 통째로 교체 | 200 | 404 없음, 409 중복, 422 |
+| `DELETE /api/data/{id}` | 삭제 | 204 | 404 |
+
+- 그룹(`memo`) 거르기에는 Firestore 복합 색인(`data`: `memo` 오름차순, `date` 내림차순)이 필요합니다. 처음 호출 때 서버 터미널에 나오는 링크로 만들거나, Firebase 콘솔 [색인] 탭에서 직접 추가합니다.
+
+## 9. 데이터 적재 (U3-3)
+```
+cd backend
+python -m scripts.seed_data
+```
+- `data_pipeline/output/weekly_group.csv`(1,794건)를 Firestore `data` 컬렉션에 넣습니다.
+- `data` 컬렉션이 **비어 있을 때만** 실행됩니다(중복 방지).
+- 실행 순서: 6-5(CSV 생성) → 7(`backend/.env` 설정) → 9

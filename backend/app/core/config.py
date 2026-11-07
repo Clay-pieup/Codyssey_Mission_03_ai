@@ -20,3 +20,6 @@ def _split_by_comma(value):
 
 # CORS 허용 주소 목록. 비어 있으면 어떤 외부 화면도 허용하지 않는다(안전한 기본값).
 ALLOWED_ORIGINS = _split_by_comma(os.getenv("ALLOWED_ORIGINS", ""))
+
+# Firebase 서비스 계정 키 파일의 경로. 키 '내용'이 아니라 '위치'만 설정에 적는다(키 파일은 레포 밖).
+FIREBASE_SERVICE_ACCOUNT_PATH = os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH", "").strip()

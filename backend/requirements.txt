@@ -5,3 +5,4 @@
 fastapi==0.162.0        # 주소→함수 창구(API)를 만들고 /docs 설명서를 자동 생성. 입력 검증 도구 pydantic을 함께 설치
 uvicorn==0.54.0         # FastAPI 앱을 실제로 켜서 요청을 받는 실행기
 python-dotenv==1.2.4    # 로컬에서 backend/.env 의 설정값을 불러옴(배포에서는 Render 환경변수를 씀)
+firebase-admin==7.7.0   # 관리자 권한으로 Firestore에 읽기·쓰기(과제 지정 패키지)
