@@ -40,7 +40,7 @@ docs/           설계 메모, 작업기록, 스크린샷
 
 ## 5. 공개하지 않는 것과 재현 범위
 - 실제 키워드 목록(`data_pipeline/keywords.csv`)과 키워드별 수집 원본(`data_pipeline/raw/`)은 브랜드명이 포함되어 비공개입니다.
-- 대신 형식 견본(`keywords.example.csv`)과 그룹 단위 결과 CSV를 공개합니다.
+- 대신 형식 견본(`keywords.example.csv`)과 그룹 단위 결과(`data_pipeline/output/`의 CSV 2개와 검증 그래프)를 공개합니다.
   → 제3자는 **결과 CSV부터** 그대로 재현할 수 있습니다.
 
 ## 6. 데이터 수집 실행 (data_pipeline)
@@ -79,3 +79,17 @@ python data_pipeline\calibrate.py
 - 배율 = 30일 실제 검색수 ÷ 같은 30일의 지수 합계 (30일 = 수집일 전날까지)
 - `< 10`은 5로 계산합니다.
 - 출력: 그룹 배율·민감도, 키워드 신뢰도 등급, 검증 A(1키워드 그룹 일치)·B(키워드 합산 vs 그룹)
+
+### 6-5. 추정 검색량 결과물 (U1-c-2)
+```
+python data_pipeline\build_outputs.py
+```
+| 파일 | 공개 | 내용 |
+|---|---|---|
+| `output\weekly_group.csv` | 공개 | 서비스용. `date`(주 시작 월요일), `value`(추정 검색량), `memo`(그룹명) — 1,794건 |
+| `output\monthly_group.csv` | 공개 | 보기용. 행=월(2021-01~2026-09), 열=6그룹 |
+| `output\validation_tongyeong.png` | 공개 | 검증 그래프(통영가볼만한곳: 우리 추정 vs 외부 화면) |
+| `raw\keyword_monthly_YYYYMMDD.csv` | 비공개 | 키워드 월별 + 신뢰도 등급 |
+
+- 실행 순서: 6-2 → 6-3 (같은 날) → 6-4 → 6-5
+- `value`는 실제 검색수가 아니라 **추정치**입니다. 환산 근거와 오차 범위는 [docs/작업기록.md](docs/작업기록.md)의 U1-c를 참고합니다.
