@@ -59,3 +59,13 @@ python data_pipeline\collect_searchad.py
 → `data_pipeline\raw\searchad_30d_YYYYMMDD.csv`
 - 조회일 기준 최근 30일 합계(PC/모바일)입니다. 조회일이 바뀌면 값도 바뀝니다.
 - `< 10`은 검색수가 10 미만이라는 네이버 표기이며 원본 그대로 저장합니다.
+
+### 6-3. 데이터랩 일간 검색 지수 (U1-b)
+```
+python data_pipeline\collect_datalab.py
+```
+→ `data_pipeline\raw\datalab_daily_YYYYMMDD.json` (원본), `.csv` (긴 표: `date, kind, name, ratio`)
+- 2021-01-01 ~ 실행 전날. 키워드 65개 + 그룹 6개를 각각 따로 요청합니다(71회, 약 1분).
+- `ratio`는 시리즈마다 최대값을 100으로 둔 상대 지수입니다.
+- 검색이 매우 적은 날은 데이터랩이 그 날짜를 빼고 보냅니다.
+- ⚠️ 6-2(검색광고)와 **같은 날** 실행해야 "최근 30일" 구간이 맞습니다.
