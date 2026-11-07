@@ -19,7 +19,7 @@
 | Firebase (Firestore) | 데이터·대화 저장 | 서비스 계정 키(.json) — **레포 밖에 보관** |
 | Render / Vercel | 백엔드 / 프론트 배포 | 계정 |
 
-> 키를 어느 `.env`에 둘지는 U1-a·U3에서 확정 후 추가합니다.
+> 네이버 키 5개는 `data_pipeline/.env`, OpenAI·Firebase 키 경로는 `backend/.env`(U3)에 둡니다. 각 폴더의 `.env.example`을 복사해 값을 채웁니다.
 
 ## 3. 처음 설치 (PowerShell)
 ```
@@ -42,3 +42,20 @@ docs/           설계 메모, 작업기록, 스크린샷
 - 실제 키워드 목록(`data_pipeline/keywords.csv`)과 키워드별 수집 원본(`data_pipeline/raw/`)은 브랜드명이 포함되어 비공개입니다.
 - 대신 형식 견본(`keywords.example.csv`)과 그룹 단위 결과 CSV를 공개합니다.
   → 제3자는 **결과 CSV부터** 그대로 재현할 수 있습니다.
+
+## 6. 데이터 수집 실행 (data_pipeline)
+### 6-1. 준비
+```
+pip install -r data_pipeline\requirements.txt
+Copy-Item data_pipeline\.env.example data_pipeline\.env
+```
+- 복사한 `data_pipeline\.env`에 값을 채웁니다.
+- `data_pipeline\keywords.csv`를 준비합니다. 형식(`group_id, group_name, keyword`)은 `keywords.example.csv`를 참고합니다.
+
+### 6-2. 검색광고 최근 30일 검색수 (U1-a)
+```
+python data_pipeline\collect_searchad.py
+```
+→ `data_pipeline\raw\searchad_30d_YYYYMMDD.csv`
+- 조회일 기준 최근 30일 합계(PC/모바일)입니다. 조회일이 바뀌면 값도 바뀝니다.
+- `< 10`은 검색수가 10 미만이라는 네이버 표기이며 원본 그대로 저장합니다.
