@@ -16,6 +16,19 @@ from app.schemas.data import DataIn, DataOut
 
 COLLECTION = "data"
 
+# 번호표: 데이터가 바뀔 때마다 1씩 올린다. 요약(summary_service)은 이 번호가 달라졌으면 기억을 버린다.
+# 데이터 쪽은 요약의 존재를 몰라도 된다 → 두 파일이 서로를 부르는 순환이 생기지 않는다.
+_version = 0
+
+
+def data_version() -> int:
+    return _version
+
+
+def _bump_version() -> None:
+    global _version
+    _version += 1
+
 
 class DataNotFoundError(Exception):
     """해당 ID의 문서가 없다."""
@@ -48,6 +61,7 @@ def create_data(item: DataIn) -> DataOut:
         raise DuplicateDataError(f"{document['date']} / {document['memo']} 데이터가 이미 있습니다. 바꾸려면 수정(PUT)을 사용하세요.")
     ref = db.collection(COLLECTION).document()   # 문서 ID는 Firestore가 자동 생성
     ref.set(document)
+    _bump_version()
     return DataOut(id=ref.id, **document)
 
 
@@ -74,6 +88,7 @@ def update_data(data_id: str, item: DataIn) -> DataOut:
     if _find_same(db, document["date"], document["memo"], exclude_id=data_id):
         raise DuplicateDataError(f"{document['date']} / {document['memo']} 데이터가 이미 다른 ID로 있습니다.")
     ref.set(document)
+    _bump_version()
     return DataOut(id=data_id, **document)
 
 
@@ -82,3 +97,9 @@ def delete_data(data_id: str) -> None:
     if not ref.get().exists:   # Firestore는 없는 문서를 지워도 오류가 없어서 직접 확인한다
         raise DataNotFoundError(f"ID {data_id} 데이터가 없습니다.")
     ref.delete()
+    _bump_version()
+
+
+def read_all() -> list[dict]:
+    """요약 계산용: data 문서 전체를 읽는다(읽기 비용 = 문서 수). summary_service만 부른다."""
+    return [doc.to_dict() for doc in get_db().collection(COLLECTION).stream()]

@@ -8,7 +8,8 @@ import datetime as dt
 from fastapi import APIRouter, HTTPException, Query, Response
 
 from app.schemas.data import DataIn, DataOut, GroupName
-from app.services import data_service
+from app.schemas.summary import DataSummary
+from app.services import data_service, summary_service
 from app.services.data_service import DataNotFoundError, DuplicateDataError
 
 router = APIRouter(prefix="/api/data", tags=["data"])
@@ -32,6 +33,12 @@ def list_data(
     if date_from and date_to and date_from > date_to:
         raise HTTPException(status_code=422, detail="date_from이 date_to보다 늦습니다.")
     return data_service.list_data(memo, date_from, date_to, limit)
+
+
+@router.get("/summary", response_model=DataSummary, summary="데이터 요약(AI 프롬프트 주입용)")
+def get_summary():
+    """전체 + 6그룹의 기간·개수·합계·평균·최대·최소·추세. 서버가 최대 1시간 기억하고, 데이터가 바뀌면 다시 계산한다."""
+    return summary_service.get_summary()
 
 
 @router.put("/{data_id}", response_model=DataOut, summary="데이터 수정(통째로 교체)")

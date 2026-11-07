@@ -118,6 +118,7 @@ uvicorn app.main:app --reload
 | `GET /api/data` | 목록(최신순). `memo`·`date_from`·`date_to`·`limit`(1~500, 기본 50) | 200 | 422 |
 | `PUT /api/data/{id}` | 통째로 교체 | 200 | 404 없음, 409 중복, 422 |
 | `DELETE /api/data/{id}` | 삭제 | 204 | 404 |
+| `GET /api/data/summary` | 전체+6그룹 요약(AI 프롬프트 주입용). 서버가 최대 1시간 기억, 데이터가 바뀌면 다시 계산 | 200 | — |
 
 - 그룹(`memo`) 거르기에는 Firestore 복합 색인(`data`: `memo` 오름차순, `date` 내림차순)이 필요합니다. 처음 호출 때 서버 터미널에 나오는 링크로 만들거나, Firebase 콘솔 [색인] 탭에서 직접 추가합니다.
 
