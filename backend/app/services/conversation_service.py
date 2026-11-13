@@ -21,6 +21,10 @@ DEFAULT_TITLE = "새 대화"
 LIST_FIELDS = ["title", "message_count", "created_at", "updated_at"]   # 목록에서 받아올 칸(messages 제외)
 
 
+class ConversationNotFoundError(Exception):
+    """해당 ID의 대화가 없다."""
+
+
 def make_title(item: ConversationIn) -> str:
     """보낸 제목 → 없으면 첫 user 메시지 앞 30자(넘으면 '…') → user 메시지도 없으면 '새 대화'."""
     if item.title:
@@ -66,3 +70,19 @@ def list_conversations(limit: int) -> list[ConversationListItem]:
         .limit(limit)
     )
     return [_to_list_item(doc.id, doc.to_dict()) for doc in query.stream()]
+
+
+def get_conversation(conversation_id: str) -> ConversationDetail:
+    """대화 하나 + 메시지 전체(U6 결정 A의 '따로 조회'). 읽기 비용 1."""
+    snapshot = get_db().collection(COLLECTION).document(conversation_id).get()
+    if not snapshot.exists:
+        raise ConversationNotFoundError(f"ID {conversation_id} 대화가 없습니다.")
+    document = snapshot.to_dict()
+    return ConversationDetail(**_to_list_item(snapshot.id, document).model_dump(), messages=document["messages"])
+
+
+def delete_conversation(conversation_id: str) -> None:
+    ref = get_db().collection(COLLECTION).document(conversation_id)
+    if not ref.get().exists:   # Firestore는 없는 문서를 지워도 오류가 없어서 직접 확인한다(U3-2와 같은 이유)
+        raise ConversationNotFoundError(f"ID {conversation_id} 대화가 없습니다.")
+    ref.delete()   # 메시지가 문서 안에 있으므로 문서 1개만 지우면 대화 전체가 사라진다(U6 결정 '가')
