@@ -9,6 +9,7 @@ conversations 컬렉션을 실제로 다루는 '일하는 함수'들.
 """
 import datetime as dt
 
+from google.api_core.exceptions import NotFound
 from google.cloud.firestore_v1 import Query
 
 from app.core.firebase import get_db
@@ -21,8 +22,15 @@ DEFAULT_TITLE = "새 대화"
 LIST_FIELDS = ["title", "message_count", "created_at", "updated_at"]   # 목록에서 받아올 칸(messages 제외)
 
 
+MAX_MESSAGES = 100   # 대화 하나에 담는 최대 메시지 수(50번 주고받기). 문서 1개 크기 한도(1MB) 보호
+
+
 class ConversationNotFoundError(Exception):
     """해당 ID의 대화가 없다."""
+
+
+class ConversationFullError(Exception):
+    """대화 하나의 메시지가 상한(MAX_MESSAGES)에 닿았다."""
 
 
 def make_title(item: ConversationIn) -> str:
@@ -86,3 +94,28 @@ def delete_conversation(conversation_id: str) -> None:
     if not ref.get().exists:   # Firestore는 없는 문서를 지워도 오류가 없어서 직접 확인한다(U3-2와 같은 이유)
         raise ConversationNotFoundError(f"ID {conversation_id} 대화가 없습니다.")
     ref.delete()   # 메시지가 문서 안에 있으므로 문서 1개만 지우면 대화 전체가 사라진다(U6 결정 '가')
+
+
+def check_room(message_count: int, adding: int) -> None:
+    """메시지를 adding개 더 넣을 자리가 있는지 미리 확인한다(채팅은 GPT를 부르기 전에 확인 → 저장 못 할 답에 돈을 쓰지 않음)."""
+    if message_count + adding > MAX_MESSAGES:
+        raise ConversationFullError(f"이 대화는 메시지가 {MAX_MESSAGES}개를 넘을 수 없습니다. 새 대화를 시작하세요.")
+
+
+def append_messages(conversation_id: str, previous: list[dict], new_messages: list[dict]) -> None:
+    """기존 대화 끝에 메시지를 이어 붙인다(U7-3 채팅의 자동 저장).
+
+    이미 읽어 온 목록(previous) + 새 메시지로 messages 칸을 바꿔 쓴다.
+    Firestore의 '목록에 추가'(ArrayUnion)는 똑같은 내용을 중복으로 보고 빼 버려서
+    "고마워"처럼 같은 말을 두 번 하면 사라질 수 있다 → 쓰지 않는다.
+    """
+    messages = previous + new_messages
+    ref = get_db().collection(COLLECTION).document(conversation_id)
+    try:
+        ref.update({   # update: 적은 칸만 바꾸고 title·created_at은 그대로 둔다
+            "messages": messages,
+            "message_count": len(messages),
+            "updated_at": dt.datetime.now(dt.timezone.utc),
+        })
+    except NotFound:   # 읽은 뒤 저장하기 전 사이에 누가 지운 경우
+        raise ConversationNotFoundError(f"ID {conversation_id} 대화가 없습니다.")
