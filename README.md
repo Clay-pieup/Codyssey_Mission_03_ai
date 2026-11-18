@@ -110,6 +110,7 @@ uvicorn app.main:app --reload
 - uvicorn은 **backend 폴더 안에서** 실행해야 `app.main`을 찾습니다.
 - `backend\.env`에 `FIREBASE_SERVICE_ACCOUNT_PATH=`(레포 밖 서비스 계정 키 파일의 전체 경로)를 씁니다.
 - Firestore 연결 시험(backend 폴더에서): `python -m scripts.check_firestore` → 1) 쓰기 2) 읽기 3) 삭제 성공이 나오면 정상
+- Windows에서 `uvicorn` 실행이 "애플리케이션 제어 정책"으로 차단되면 `python -m uvicorn app.main:app --reload`로 실행합니다. Firestore 통신 부품(grpc)까지 차단되면 로컬에서는 Firestore에 연결할 수 없으므로 배포 서버에서 확인합니다([작업기록 U6-2](docs/작업기록.md)).
 
 ## 8. 데이터 API (U3-2)
 | 요청 | 설명 | 성공 | 실패 |
@@ -161,6 +162,8 @@ python -m scripts.seed_data
 |---|---|---|---|
 | `POST /api/conversations` | 새 대화 저장 `{title(선택, 1~100자), messages: [{role: user/assistant, content: 1~4,000자}] 1~100개}`. 제목을 생략하면 첫 질문 앞 30자 | 201 | 422 |
 | `GET /api/conversations` | 목록(최근에 바뀐 순). 제목·메시지 수·시각(한국 시간)만, `limit`(1~100, 기본 20) | 200 | 422 |
+| `GET /api/conversations/{id}` | 대화 하나 + 메시지 전체(한국 시간) | 200 | 404 없음 |
+| `DELETE /api/conversations/{id}` | 대화 삭제 | 204 | 404 없음 |
 
-- 대화 하나 불러오기·삭제는 U6-2에서 추가합니다.
+- 불러오기 방식: 목록은 가볍게, 메시지 전체는 `GET /{id}`로 따로 조회(과제의 A 방식).
 - 별도 색인은 필요 없습니다.

@@ -11,6 +11,9 @@ from app.services.conversation_service import ConversationNotFoundError
 
 router = APIRouter(prefix="/api/conversations", tags=["conversations"])
 
+# 설명서(/docs)에 "없는 ID면 404"를 표시하기 위한 안내. 동작은 아래 try/except가 한다.
+NOT_FOUND = {404: {"description": "해당 ID의 대화가 없음"}}
+
 
 @router.post("", response_model=ConversationDetail, status_code=201, summary="새 대화 저장")
 def create_conversation(item: ConversationIn):
@@ -24,7 +27,7 @@ def list_conversations(limit: int = Query(20, ge=1, le=100, description="최대 
     return conversation_service.list_conversations(limit)
 
 
-@router.get("/{conversation_id}", response_model=ConversationDetail, summary="대화 하나 불러오기(메시지 전체)")
+@router.get("/{conversation_id}", response_model=ConversationDetail, summary="대화 하나 불러오기(메시지 전체)", responses=NOT_FOUND)
 def get_conversation(conversation_id: str):
     try:
         return conversation_service.get_conversation(conversation_id)
@@ -32,7 +35,7 @@ def get_conversation(conversation_id: str):
         raise HTTPException(status_code=404, detail=str(error))
 
 
-@router.delete("/{conversation_id}", status_code=204, summary="대화 삭제")
+@router.delete("/{conversation_id}", status_code=204, summary="대화 삭제", responses=NOT_FOUND)
 def delete_conversation(conversation_id: str):
     try:
         conversation_service.delete_conversation(conversation_id)
