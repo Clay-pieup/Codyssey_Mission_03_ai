@@ -100,6 +100,7 @@ pip install -r backend\requirements.txt
 Copy-Item backend\.env.example backend\.env
 ```
 - 복사한 `backend\.env`의 `ALLOWED_ORIGINS=` 뒤에 허용할 프론트 주소를 씁니다(로컬 예: `http://localhost:5500,http://127.0.0.1:5500`).
+- `OPENAI_API_KEY=`(OpenAI 키), `OPENAI_MODEL=`(비우면 gpt-4.1-mini)도 씁니다.
 
 ```
 cd backend
@@ -110,7 +111,8 @@ uvicorn app.main:app --reload
 - uvicorn은 **backend 폴더 안에서** 실행해야 `app.main`을 찾습니다.
 - `backend\.env`에 `FIREBASE_SERVICE_ACCOUNT_PATH=`(레포 밖 서비스 계정 키 파일의 전체 경로)를 씁니다.
 - Firestore 연결 시험(backend 폴더에서): `python -m scripts.check_firestore` → 1) 쓰기 2) 읽기 3) 삭제 성공이 나오면 정상
-- Windows에서 `uvicorn` 실행이 "애플리케이션 제어 정책"으로 차단되면 `python -m uvicorn app.main:app --reload`로 실행합니다. Firestore 통신 부품(grpc)까지 차단되면 로컬에서는 Firestore에 연결할 수 없으므로 배포 서버에서 확인합니다([작업기록 U6-2](docs/작업기록.md)).
+- GPT 연결 시험(backend 폴더에서): `python -m scripts.check_openai` → `연결 정상`이 나오면 정상(1회 약 $0.0001)
+- Windows에서 `pip`·`uvicorn` 실행이 "애플리케이션 제어 정책"으로 차단되면 `python -m pip ...`·`python -m uvicorn app.main:app --reload`로 실행합니다. Firestore(grpc)·GPT(jiter) 부품까지 차단되면 로컬에서는 연결할 수 없으므로 배포 서버에서 확인합니다([작업기록 U6-2·U7-1](docs/작업기록.md)).
 
 ## 8. 데이터 API (U3-2)
 | 요청 | 설명 | 성공 | 실패 |
@@ -150,6 +152,8 @@ python -m scripts.seed_data
 |---|---|
 | `ALLOWED_ORIGINS` | 허용할 프론트 주소(쉼표로 구분) |
 | `FIREBASE_SERVICE_ACCOUNT_PATH` | `/etc/secrets/firebase-service-account.json` |
+| `OPENAI_API_KEY` | OpenAI 키 |
+| `OPENAI_MODEL` | `gpt-4.1-mini` |
 
 - **Secret Files:** 파일 이름 `firebase-service-account.json`, 내용 = 서비스 계정 키 JSON 전체. 파일 이름은 환경변수 경로의 끝과 같아야 합니다.
 - 파이썬 버전은 Render가 `backend/.python-version`(3.14)을 읽어 정합니다.

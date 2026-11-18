@@ -23,3 +23,9 @@ ALLOWED_ORIGINS = _split_by_comma(os.getenv("ALLOWED_ORIGINS", ""))
 
 # Firebase 서비스 계정 키 파일의 경로. 키 '내용'이 아니라 '위치'만 설정에 적는다(키 파일은 레포 밖).
 FIREBASE_SERVICE_ACCOUNT_PATH = os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH", "").strip()
+
+# OpenAI 키. 값은 .env / Render 환경변수에만 둔다(코드·GitHub·로그에 쓰지 않는다).
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
+
+# 쓸 GPT 모델 이름. 비어 있으면 gpt-4.1-mini(U7 결정). 모델을 바꿀 때 코드가 아니라 환경변수만 바꾼다.
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "").strip() or "gpt-4.1-mini"
