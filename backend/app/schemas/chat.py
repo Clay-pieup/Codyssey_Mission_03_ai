@@ -8,7 +8,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class ChatIn(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    # json_schema_extra: 설명서(/docs) 입력 칸의 예시를 '질문 한 줄'로 고정한다.
+    # 없으면 Swagger가 칸마다 예시를 지어내 "conversation_id": "string"이 들어가고, 그대로 보내면 404가 난다.
+    model_config = ConfigDict(extra="forbid", json_schema_extra={"examples": [{"message": "최근 4주 검색량 추세 알려줘"}]})
 
     message: str = Field(min_length=1, max_length=4000, description="사용자 질문(1~4,000자)",
                          examples=["최근 4주 검색량 추세 알려줘"])
