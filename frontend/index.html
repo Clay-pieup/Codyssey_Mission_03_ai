@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>검색 데이터 AI 비서</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- defer: 화면(HTML)을 다 읽은 뒤, 적힌 순서대로 실행한다 → 뒤 파일이 앞 파일의 함수를 쓸 수 있다 -->
+  <script src="js/config.js" defer></script>
+  <script src="js/api.js" defer></script>
+  <script src="js/main.js" defer></script>
+  <script src="js/chat.js" defer></script>
+</head>
+<body>
+  <!-- 잠든 무료 서버를 깨우는 동안만 보이는 안내 띠(main.js가 켜고 끈다) -->
+  <div id="wake-banner" class="banner" hidden>
+    서버를 깨우는 중입니다(무료 서버, 최대 1분) · 경과 <span id="wake-seconds">0</span>초
+  </div>
+
+  <header class="top">
+    <h1>검색 데이터 AI 비서</h1>
+    <p class="sub">통영 숙박·여행 키워드 6그룹의 주간 추정 검색량을 바탕으로 답합니다.</p>
+    <nav class="tabs">
+      <button class="tab active" type="button" data-tab="chat">채팅</button>
+      <button class="tab" type="button" data-tab="data">데이터</button>
+      <button class="tab" type="button" data-tab="history">대화 기록</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="tab-chat" class="panel">
+      <div class="chat-head">
+        <strong id="chat-title">새 대화</strong>
+        <button id="new-chat" class="ghost" type="button">새 대화</button>
+      </div>
+      <div id="messages" class="messages"></div>
+      <form id="chat-form" class="chat-form">
+        <textarea id="chat-input" rows="2" maxlength="4000"
+                  placeholder="질문을 입력하세요 (Enter 보내기 · Shift+Enter 줄바꿈)"></textarea>
+        <button id="send" type="submit" disabled>보내기</button>
+      </form>
+    </section>
+
+    <section id="tab-data" class="panel" hidden>
+      <p class="hint">데이터 요약·관리는 U10에서 추가합니다.</p>
+    </section>
+
+    <section id="tab-history" class="panel" hidden>
+      <p class="hint">대화 기록은 U11에서 추가합니다.</p>
+    </section>
+  </main>
+</body>
+</html>

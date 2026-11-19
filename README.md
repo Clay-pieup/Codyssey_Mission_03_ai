@@ -181,3 +181,22 @@ python -m scripts.seed_data
 - 비용 상한: 답 최대 500토큰, GPT에 이전 메시지 최근 10개만, 서버 하루 200회(서버가 다시 켜지면 0부터) + OpenAI 대시보드 월 한도
 - 1회 비용 예: 입력 약 1,200~1,500 + 출력 약 100~150토큰 ≈ $0.0007(gpt-4.1-mini)
 - 이어서 물을 때는 응답의 `conversation_id`를 그대로 보냅니다.
+
+## 13. 프론트엔드 실행 (frontend, U9~)
+HTML/CSS/JavaScript만 사용합니다(라이브러리·프레임워크 없음).
+
+| 파일 | 역할 |
+|---|---|
+| `index.html` / `style.css` | 화면 뼈대(탭: 채팅·데이터·대화 기록) / 모양 |
+| `js/config.js` | 백엔드 주소 `API_BASE_URL`(배포 때 Vercel 환경변수로 덮어씀) |
+| `js/api.js` | 서버 통신 공통 함수 |
+| `js/main.js` | 탭 전환, 잠든 서버 깨우기 안내 |
+| `js/chat.js` | 채팅(로딩 표시, 이어 대화, 새 대화) |
+
+로컬 미리 보기(PowerShell):
+```
+cd frontend
+python -m http.server 5500
+```
+→ 브라우저에서 http://localhost:5500 (이 주소가 백엔드 `ALLOWED_ORIGINS`에 있어야 함)
+- 로컬 화면도 `config.js`의 Render 서버에 연결됩니다. 서버가 자고 있으면 위쪽에 "서버를 깨우는 중" 안내가 뜹니다(약 30초).
