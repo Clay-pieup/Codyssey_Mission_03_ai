@@ -10,6 +10,7 @@
   <script src="js/api.js" defer></script>
   <script src="js/main.js" defer></script>
   <script src="js/chat.js" defer></script>
+  <script src="js/data.js" defer></script>
 </head>
 <body>
   <!-- 잠든 무료 서버를 깨우는 동안만 보이는 안내 띠(main.js가 켜고 끈다) -->
@@ -42,7 +43,35 @@
     </section>
 
     <section id="tab-data" class="panel" hidden>
-      <p class="hint">데이터 요약·관리는 U10에서 추가합니다.</p>
+      <!-- ① 요약: 전체 카드 + 6그룹 표 (data.js가 채운다) -->
+      <h2>데이터 요약</h2>
+      <div id="summary-total" class="summary-card"><p class="hint">불러오는 중…</p></div>
+      <div class="table-wrap"><table id="summary-groups" class="table"></table></div>
+
+      <!-- ② 추가·수정 겸용 입력 칸 -->
+      <h2 id="form-title">새 데이터 추가</h2>
+      <form id="data-form" class="data-form">
+        <label>주 시작일(월요일)<input id="f-date" type="date" required></label>
+        <label>그룹<select id="f-memo" required></select></label>
+        <label>추정 검색량<input id="f-value" type="number" min="0" step="1" required></label>
+        <div class="form-buttons">
+          <button id="f-submit" type="submit">추가</button>
+          <button id="f-cancel" class="ghost" type="button" hidden>수정 취소</button>
+        </div>
+      </form>
+      <p id="data-message" class="message" hidden></p>
+
+      <!-- ③ 목록: 그룹 고르기 + 최신 N건 -->
+      <h2>데이터 목록</h2>
+      <div class="list-filters">
+        <select id="l-memo"><option value="">전체 그룹</option></select>
+        <select id="l-limit">
+          <option value="20">최신 20건</option>
+          <option value="50">최신 50건</option>
+          <option value="100">최신 100건</option>
+        </select>
+      </div>
+      <div class="table-wrap"><table id="data-list" class="table"></table></div>
     </section>
 
     <section id="tab-history" class="panel" hidden>

@@ -95,3 +95,40 @@ main { max-width: 760px; margin: 0 auto; padding: 16px; }
   font: inherit; font-weight: 600; cursor: pointer;
 }
 .chat-form button:disabled { background: #a7b4cc; cursor: not-allowed; }
+
+/* ---------- U10 데이터 탭 ---------- */
+.panel h2 { margin: 20px 0 10px; font-size: 17px; }
+.panel h2:first-child { margin-top: 0; }
+
+.summary-card {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px;
+  padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg);
+}
+.summary-card div { display: flex; flex-direction: column; }
+.summary-card span { font-size: 12px; color: var(--muted); }
+.summary-card strong { font-size: 14px; font-weight: 600; }
+
+.table-wrap { overflow-x: auto; margin-top: 10px; }   /* 휴대폰에서는 표를 옆으로 밀어서 본다 */
+.table { width: 100%; border-collapse: collapse; font-size: 14px; white-space: nowrap; }
+.table th, .table td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; }
+.table th { color: var(--muted); font-weight: 600; background: var(--bg); }
+.table td:nth-child(n+2) { font-variant-numeric: tabular-nums; }
+
+.data-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; align-items: end; }
+.data-form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.data-form input, .data-form select, .list-filters select {
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; color: var(--text); background: var(--card);
+}
+.form-buttons { display: flex; gap: 8px; }
+.form-buttons button[type=submit] {
+  flex: 1; padding: 9px 14px; border: 0; border-radius: 8px;
+  background: var(--accent); color: #fff; font: inherit; font-weight: 600; cursor: pointer;
+}
+.list-filters { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.message { margin: 10px 0 0; padding: 8px 12px; border-radius: 8px; background: #e8f5ec; color: #146c2e; font-size: 14px; }
+.message.error { background: var(--error-bg); color: var(--error-text); }
+
+.actions { display: inline-flex; gap: 6px; }
+.ghost.small { padding: 3px 10px; font-size: 13px; }
+.ghost.danger { color: var(--error-text); border-color: #f3c2bd; }

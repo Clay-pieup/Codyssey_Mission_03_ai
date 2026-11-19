@@ -10,6 +10,8 @@ document.querySelectorAll(".tab").forEach((tab) => {
     document.querySelectorAll(".panel").forEach((panel) => {
       panel.hidden = panel.id !== `tab-${tab.dataset.tab}`;
     });
+    // 어떤 탭이 열렸는지 알린다 → 데이터·기록 화면은 처음 열릴 때만 서버에서 불러온다(안 보는 화면은 요청 안 함)
+    document.dispatchEvent(new CustomEvent("tab-shown", { detail: tab.dataset.tab }));
   });
 });
 

@@ -30,5 +30,6 @@ async function api(path, { method = "GET", body } = {}) {
 function readDetail(data) {
   if (!data || data.detail === undefined) return "";
   if (typeof data.detail === "string") return data.detail;
-  return data.detail.map((item) => item.msg).join(" / ");
+  // Pydantic이 붙이는 "Value error, " 머리말은 떼고 사람이 읽을 안내만 남긴다
+  return data.detail.map((item) => item.msg.replace(/^Value error, /, "")).join(" / ");
 }
