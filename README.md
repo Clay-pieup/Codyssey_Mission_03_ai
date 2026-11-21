@@ -150,7 +150,7 @@ python -m scripts.seed_data
 
 | 환경변수 | 값 |
 |---|---|
-| `ALLOWED_ORIGINS` | 허용할 프론트 주소(쉼표로 구분) |
+| `ALLOWED_ORIGINS` | 허용할 프론트 주소(쉼표로 구분). 예: `http://localhost:5500,http://127.0.0.1:5500,https://codyssey-ai-assistant.vercel.app` |
 | `FIREBASE_SERVICE_ACCOUNT_PATH` | `/etc/secrets/firebase-service-account.json` |
 | `OPENAI_API_KEY` | OpenAI 키 |
 | `OPENAI_MODEL` | `gpt-4.1-mini` |
@@ -202,3 +202,17 @@ python -m http.server 5500
 ```
 → 브라우저에서 http://localhost:5500 (이 주소가 백엔드 `ALLOWED_ORIGINS`에 있어야 함)
 - 로컬 화면도 `config.js`의 Render 서버에 연결됩니다. 서버가 자고 있으면 위쪽에 "서버를 깨우는 중" 안내가 뜹니다(약 30초).
+
+## 14. 프론트 배포 (Vercel, U13)
+- 배포 주소: https://codyssey-ai-assistant.vercel.app
+
+| 항목 | 값 |
+|---|---|
+| Root Directory | `frontend` |
+| Application Preset | Other |
+| Production Branch | `feature/ai-assistant` |
+| Build 설정 | `frontend/vercel.json`(빌드 때 `API_BASE_URL`로 `js/config.js` 생성, 없으면 기존 파일 사용) |
+| 환경변수 | `API_BASE_URL` = 백엔드 주소(끝에 `/` 없음) |
+
+- 백엔드(Render) `ALLOWED_ORIGINS`에 Vercel 주소를 추가해야 화면이 서버에 연결됩니다(CORS).
+- 확인: `https://(Vercel 주소)/js/config.js`가 작은따옴표 한 줄이면 환경변수로 만들어진 것입니다.
