@@ -1,1 +1,218 @@
-# Codyssey_Mission_03_ai
+# Codyssey_Mission_03_ai — 검색 데이터 기반 AI 비서
+
+코디세이 AI 네이티브 경남 1기 — AI 응용 학습 미션 「AI Agent 개발: 나만의 AI 비서 구축」 저장소입니다.
+설계 메모와 단위별 해설은 [docs/작업기록.md](docs/작업기록.md)에 있습니다.
+
+## 1. 실행 환경
+| 항목 | 버전/내용 |
+|---|---|
+| OS | Windows 11 (개발) / Linux (Render 서버) |
+| Python | 3.14 (로컬 3.14.7, Render 3.14.10) |
+| Git | 필수 |
+
+## 2. 준비할 계정·키
+| 서비스 | 용도 | 필요한 값 |
+|---|---|---|
+| NAVER API HUB (데이터랩) | 주간 검색 지수 수집 | Client ID, Client Secret |
+| 네이버 검색광고 API | 최근 30일 실제 검색수 | CUSTOMER_ID, 액세스라이선스, 비밀키 |
+| OpenAI | GPT 채팅 | API Key |
+| Firebase (Firestore) | 데이터·대화 저장 | 서비스 계정 키(.json) — **레포 밖에 보관** |
+| Render / Vercel | 백엔드 / 프론트 배포 | 계정 |
+
+> 네이버 키 5개는 `data_pipeline/.env`, OpenAI·Firebase 키 경로는 `backend/.env`(U3)에 둡니다. 각 폴더의 `.env.example`을 복사해 값을 채웁니다.
+
+## 3. 처음 설치 (PowerShell)
+```
+git clone https://github.com/Clay-pieup/Codyssey_Mission_03_ai.git
+cd Codyssey_Mission_03_ai
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+```
+> 패키지 설치는 단위별로 추가합니다.
+
+## 4. 폴더 구조
+```
+data_pipeline/  수집·보정 (로컬 전용, 배포 안 함)
+backend/        FastAPI 서버 → Render
+frontend/       HTML/CSS/JS → Vercel
+docs/           설계 메모, 작업기록, 스크린샷
+```
+
+## 5. 공개하지 않는 것과 재현 범위
+- 실제 키워드 목록(`data_pipeline/keywords.csv`)과 키워드별 수집 원본(`data_pipeline/raw/`)은 브랜드명이 포함되어 비공개입니다.
+- 대신 형식 견본(`keywords.example.csv`)과 그룹 단위 결과(`data_pipeline/output/`의 CSV 2개와 검증 그래프)를 공개합니다.
+  → 제3자는 **결과 CSV부터** 그대로 재현할 수 있습니다.
+
+## 6. 데이터 수집 실행 (data_pipeline)
+### 6-1. 준비
+```
+pip install -r data_pipeline\requirements.txt
+Copy-Item data_pipeline\.env.example data_pipeline\.env
+```
+- 복사한 `data_pipeline\.env`에 값을 채웁니다.
+- `data_pipeline\keywords.csv`를 준비합니다. 형식(`group_id, group_name, keyword`)은 `keywords.example.csv`를 참고합니다.
+
+### 6-2. 검색광고 최근 30일 검색수 (U1-a)
+```
+python data_pipeline\collect_searchad.py
+```
+→ `data_pipeline\raw\searchad_30d_YYYYMMDD.csv`
+- 조회일 기준 최근 30일 합계(PC/모바일)입니다. 조회일이 바뀌면 값도 바뀝니다.
+- `< 10`은 검색수가 10 미만이라는 네이버 표기이며 원본 그대로 저장합니다.
+
+### 6-3. 데이터랩 일간 검색 지수 (U1-b)
+```
+python data_pipeline\collect_datalab.py
+```
+→ `data_pipeline\raw\datalab_daily_YYYYMMDD.json` (원본), `.csv` (긴 표: `date, kind, name, ratio`)
+- 2021-01-01 ~ 실행 전날. 키워드 65개 + 그룹 6개를 각각 따로 요청합니다(71회, 약 1분).
+- `ratio`는 시리즈마다 최대값을 100으로 둔 상대 지수입니다.
+- 검색이 매우 적은 날은 데이터랩이 그 날짜를 빼고 보냅니다.
+- ⚠️ 6-2(검색광고)와 **같은 날** 실행해야 "최근 30일" 구간이 맞습니다.
+
+### 6-4. 환산 배율 계산·검증 (U1-c-1)
+```
+python data_pipeline\calibrate.py
+```
+→ `data_pipeline\raw\calibration_YYYYMMDD.csv`
+- `raw/`에서 6-2·6-3을 같은 날 수집한 파일 쌍 중 가장 최근 날짜를 자동으로 고릅니다.
+- 배율 = 30일 실제 검색수 ÷ 같은 30일의 지수 합계 (30일 = 수집일 전날까지)
+- `< 10`은 5로 계산합니다.
+- 출력: 그룹 배율·민감도, 키워드 신뢰도 등급, 검증 A(1키워드 그룹 일치)·B(키워드 합산 vs 그룹)
+
+### 6-5. 추정 검색량 결과물 (U1-c-2)
+```
+python data_pipeline\build_outputs.py
+```
+| 파일 | 공개 | 내용 |
+|---|---|---|
+| `output\weekly_group.csv` | 공개 | 서비스용. `date`(주 시작 월요일), `value`(추정 검색량), `memo`(그룹명) — 1,794건 |
+| `output\monthly_group.csv` | 공개 | 보기용. 행=월(2021-01~2026-09), 열=6그룹 |
+| `output\validation_tongyeong.png` | 공개 | 검증 그래프(통영가볼만한곳: 우리 추정 vs 외부 화면) |
+| `raw\keyword_monthly_YYYYMMDD.csv` | 비공개 | 키워드 월별 + 신뢰도 등급 |
+
+- 실행 순서: 6-2 → 6-3 (같은 날) → 6-4 → 6-5
+- `value`는 실제 검색수가 아니라 **추정치**입니다. 환산 근거와 오차 범위는 [docs/작업기록.md](docs/작업기록.md)의 U1-c를 참고합니다.
+
+## 7. 백엔드 실행 (backend)
+```
+pip install -r backend\requirements.txt
+Copy-Item backend\.env.example backend\.env
+```
+- 복사한 `backend\.env`의 `ALLOWED_ORIGINS=` 뒤에 허용할 프론트 주소를 씁니다(로컬 예: `http://localhost:5500,http://127.0.0.1:5500`).
+- `OPENAI_API_KEY=`(OpenAI 키), `OPENAI_MODEL=`(비우면 gpt-4.1-mini)도 씁니다.
+
+```
+cd backend
+uvicorn app.main:app --reload
+```
+- http://127.0.0.1:8000/docs → API 설명서, `GET /api/health` → `{"status": "ok"}`
+- 끄기: 터미널에서 **Ctrl+C**
+- uvicorn은 **backend 폴더 안에서** 실행해야 `app.main`을 찾습니다.
+- `backend\.env`에 `FIREBASE_SERVICE_ACCOUNT_PATH=`(레포 밖 서비스 계정 키 파일의 전체 경로)를 씁니다.
+- Firestore 연결 시험(backend 폴더에서): `python -m scripts.check_firestore` → 1) 쓰기 2) 읽기 3) 삭제 성공이 나오면 정상
+- GPT 연결 시험(backend 폴더에서): `python -m scripts.check_openai` → `연결 정상`이 나오면 정상(1회 약 $0.0001)
+- Windows에서 `pip`·`uvicorn` 실행이 "애플리케이션 제어 정책"으로 차단되면 `python -m pip ...`·`python -m uvicorn app.main:app --reload`로 실행합니다. Firestore(grpc)·GPT(jiter) 부품까지 차단되면 로컬에서는 연결할 수 없으므로 배포 서버에서 확인합니다([작업기록 U6-2·U7-1](docs/작업기록.md)).
+
+## 8. 데이터 API (U3-2)
+| 요청 | 설명 | 성공 | 실패 |
+|---|---|---|---|
+| `POST /api/data` | 추가 `{date(월요일), value(0 이상 정수), memo(6그룹)}` | 201 | 409 중복, 422 규칙 위반 |
+| `GET /api/data` | 목록(최신순). `memo`·`date_from`·`date_to`·`limit`(1~500, 기본 50) | 200 | 422 |
+| `PUT /api/data/{id}` | 통째로 교체 | 200 | 404 없음, 409 중복, 422 |
+| `DELETE /api/data/{id}` | 삭제 | 204 | 404 |
+| `GET /api/data/summary` | 전체+6그룹 요약(AI 프롬프트 주입용). 서버가 최대 1시간 기억, 데이터가 바뀌면 다시 계산 | 200 | — |
+| `GET /api/data/statistics` | ★ 연도·월별 합계, 그룹 점유율 변화(최근 52주 vs 직전 52주), 계절성. summary와 같은 기억 사용(추가 읽기 없음) | 200 | — |
+
+- 그룹(`memo`) 거르기에는 Firestore 복합 색인(`data`: `memo` 오름차순, `date` 내림차순)이 필요합니다. 처음 호출 때 서버 터미널에 나오는 링크로 만들거나, Firebase 콘솔 [색인] 탭에서 직접 추가합니다.
+
+## 9. 데이터 적재 (U3-3)
+```
+cd backend
+python -m scripts.seed_data
+```
+- `data_pipeline/output/weekly_group.csv`(1,794건)를 Firestore `data` 컬렉션에 넣습니다.
+- `data` 컬렉션이 **비어 있을 때만** 실행됩니다(중복 방지).
+- 실행 순서: 6-5(CSV 생성) → 7(`backend/.env` 설정) → 9
+
+## 10. 백엔드 배포 (Render, U5)
+- 배포 주소: https://codyssey-ai-assistant-api.onrender.com (API 설명서: https://codyssey-ai-assistant-api.onrender.com/docs)
+
+| 항목 | 값 |
+|---|---|
+| Branch | `feature/ai-assistant` |
+| Root Directory | `backend` |
+| Region | Singapore |
+| Build Command | `pip install -r requirements.txt` |
+| Start Command | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
+| Instance Type | Free |
+| Health Check Path | `/api/health` |
+
+| 환경변수 | 값 |
+|---|---|
+| `ALLOWED_ORIGINS` | 허용할 프론트 주소(쉼표로 구분). 예: `http://localhost:5500,http://127.0.0.1:5500,https://codyssey-ai-assistant.vercel.app` |
+| `FIREBASE_SERVICE_ACCOUNT_PATH` | `/etc/secrets/firebase-service-account.json` |
+| `OPENAI_API_KEY` | OpenAI 키 |
+| `OPENAI_MODEL` | `gpt-4.1-mini` |
+
+- **Secret Files:** 파일 이름 `firebase-service-account.json`, 내용 = 서비스 계정 키 JSON 전체. 파일 이름은 환경변수 경로의 끝과 같아야 합니다.
+- 파이썬 버전은 Render가 `backend/.python-version`(3.14)을 읽어 정합니다.
+- push하면 자동으로 다시 배포됩니다.
+- 무료 서버는 15분 동안 요청이 없으면 잠듭니다. 다음 첫 요청은 깨어나는 동안 약 30초 걸립니다(2026-11-07 측정 32.9초).
+- 무료여도 Render가 카드 등록(본인 확인)을 요구할 수 있습니다. Free 인스턴스 자체는 $0입니다.
+
+## 11. 대화 기록 API (U6)
+| 요청 | 설명 | 성공 | 실패 |
+|---|---|---|---|
+| `POST /api/conversations` | 새 대화 저장 `{title(선택, 1~100자), messages: [{role: user/assistant, content: 1~4,000자}] 1~100개}`. 제목을 생략하면 첫 질문 앞 30자 | 201 | 422 |
+| `GET /api/conversations` | 목록(최근에 바뀐 순). 제목·메시지 수·시각(한국 시간)만, `limit`(1~100, 기본 20) | 200 | 422 |
+| `GET /api/conversations/{id}` | 대화 하나 + 메시지 전체(한국 시간) | 200 | 404 없음 |
+| `DELETE /api/conversations/{id}` | 대화 삭제 | 204 | 404 없음 |
+
+- 불러오기 방식: 목록은 가볍게, 메시지 전체는 `GET /{id}`로 따로 조회(과제의 A 방식).
+- 별도 색인은 필요 없습니다.
+
+## 12. AI 대화 API (U7)
+| 요청 | 설명 | 성공 | 실패 |
+|---|---|---|---|
+| `POST /api/chat` | `{message(1~4,000자), conversation_id(선택)}` → 데이터 요약을 시스템 프롬프트에 넣어 GPT 호출, 질문·답 자동 저장. 생략하면 새 대화, 보내면 이어서 | 200 `{conversation_id, title, reply, usage}` | 404 대화 없음, 409 대화당 100개 초과, 422, 429 하루 200회 초과, 502 GPT 실패(저장 안 함), 503 키 없음 |
+| `GET /api/chat/system-prompt` | GPT에 들어가는 시스템 프롬프트 미리보기(GPT 호출 없음) | 200 | — |
+
+- 비용 상한: 답 최대 500토큰, GPT에 이전 메시지 최근 10개만, 서버 하루 200회(서버가 다시 켜지면 0부터) + OpenAI 대시보드 월 한도
+- 1회 비용 예: 입력 약 1,200~1,500 + 출력 약 100~150토큰 ≈ $0.0007(gpt-4.1-mini)
+- 이어서 물을 때는 응답의 `conversation_id`를 그대로 보냅니다.
+
+## 13. 프론트엔드 실행 (frontend, U9~)
+HTML/CSS/JavaScript만 사용합니다(라이브러리·프레임워크 없음).
+
+| 파일 | 역할 |
+|---|---|
+| `index.html` / `style.css` | 화면 뼈대(탭: 채팅·데이터·대화 기록) / 모양 |
+| `js/config.js` | 백엔드 주소 `API_BASE_URL`(배포 때 Vercel 환경변수로 덮어씀) |
+| `js/api.js` | 서버 통신 공통 함수 |
+| `js/main.js` | 탭 전환, 잠든 서버 깨우기 안내 |
+| `js/chat.js` | 채팅(로딩 표시, 이어 대화, 새 대화) |
+| `js/data.js` | 데이터 요약(전체 + 6그룹), 목록(그룹·최신 N건), 추가·수정·삭제 |
+| `js/history.js` | 대화 기록(최신 20개, 누르면 채팅 탭에서 이어 묻기, 삭제) |
+
+로컬 미리 보기(PowerShell):
+```
+cd frontend
+python -m http.server 5500
+```
+→ 브라우저에서 http://localhost:5500 (이 주소가 백엔드 `ALLOWED_ORIGINS`에 있어야 함)
+- 로컬 화면도 `config.js`의 Render 서버에 연결됩니다. 서버가 자고 있으면 위쪽에 "서버를 깨우는 중" 안내가 뜹니다(약 30초).
+
+## 14. 프론트 배포 (Vercel, U13)
+- 배포 주소: https://codyssey-ai-assistant.vercel.app
+
+| 항목 | 값 |
+|---|---|
+| Root Directory | `frontend` |
+| Application Preset | Other |
+| Production Branch | `feature/ai-assistant` |
+| Build 설정 | `frontend/vercel.json`(빌드 때 `API_BASE_URL`로 `js/config.js` 생성, 없으면 기존 파일 사용) |
+| 환경변수 | `API_BASE_URL` = 백엔드 주소(끝에 `/` 없음) |
+
+- 백엔드(Render) `ALLOWED_ORIGINS`에 Vercel 주소를 추가해야 화면이 서버에 연결됩니다(CORS).
+- 확인: `https://(Vercel 주소)/js/config.js`가 작은따옴표 한 줄이면 환경변수로 만들어진 것입니다.

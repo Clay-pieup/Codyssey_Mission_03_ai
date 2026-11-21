@@ -1,0 +1,5 @@
+{
+  "framework": null,
+  "buildCommand": "if [ -n \"$API_BASE_URL\" ]; then echo \"window.API_BASE_URL = '$API_BASE_URL';\" > js/config.js && echo \"config.js <- API_BASE_URL\"; else echo \"API_BASE_URL 없음: config.js 그대로 사용\"; fi",
+  "outputDirectory": "."
+}
