@@ -145,6 +145,7 @@ async function submitForm(event) {
     showMessage(editing ? "수정했습니다." : "추가했습니다.");
     resetForm();
     await Promise.all([loadList(), loadSummary()]);   // 목록과 요약을 동시에 다시 불러온다
+    document.dispatchEvent(new Event("data-changed"));   // 채팅 위 요약 한 줄도 다시 불러오게 알림
   } catch (error) {
     showMessage(error.message, true);   // 예: "date는 주 시작일(월요일)이어야 합니다." / 409 중복
   }
@@ -159,6 +160,7 @@ async function removeItem(item) {
     if (dataState.editingId === item.id) resetForm();
     showMessage("삭제했습니다.");
     await Promise.all([loadList(), loadSummary()]);
+    document.dispatchEvent(new Event("data-changed"));   // 채팅 위 요약 한 줄도 다시 불러오게 알림
   } catch (error) {
     showMessage(error.message, true);
   }

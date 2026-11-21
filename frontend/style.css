@@ -149,3 +149,10 @@ main { max-width: 760px; margin: 0 auto; padding: 16px; }
 .history-open small { color: var(--muted); font-size: 12px; }
 .history-notice { color: var(--muted); font-size: 14px; padding: 6px 2px; }
 .history-notice.error { color: var(--error-text); }
+
+/* ---------- U15 채팅 위 데이터 요약 한 줄 ---------- */
+.chat-summary {
+  margin: -4px 0 12px; padding: 8px 12px;
+  border-radius: 8px; background: var(--bg);
+  color: var(--muted); font-size: 13px;
+}

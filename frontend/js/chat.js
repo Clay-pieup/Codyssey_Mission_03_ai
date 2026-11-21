@@ -79,6 +79,18 @@ function startNewChat() {
   chatInput.focus();
 }
 
+// AI가 참고하는 데이터 요약을 채팅 위에 한 줄로 보여 준다(U15).
+// 서버가 GPT에 넣는 요약(/api/data/summary)과 같은 값 → 사용자도 "AI가 무엇을 보고 답하는지" 알 수 있다.
+async function loadChatSummary() {
+  const line = document.getElementById("chat-summary");
+  try {
+    const s = await api("/api/data/summary");
+    line.textContent = `참고 데이터 ${s.period} · ${s.count.toLocaleString()}개 · ${s.trend}`;
+  } catch (error) {
+    line.textContent = `데이터 요약을 불러오지 못했습니다: ${error.message}`;
+  }
+}
+
 // 대화 기록(U11)에서 고른 대화를 채팅 화면에 다시 그린다.
 // ID도 함께 기억하므로 이어서 물으면 같은 대화에 저장된다(U7 이어 대화 그대로).
 function openConversation(detail) {
@@ -92,6 +104,8 @@ function openConversation(detail) {
 chatForm.addEventListener("submit", sendMessage);
 document.getElementById("new-chat").addEventListener("click", startNewChat);
 document.addEventListener("server-ready", updateSendButton);
+document.addEventListener("server-ready", loadChatSummary);
+document.addEventListener("data-changed", loadChatSummary);   // 데이터 탭에서 추가·수정·삭제하면 다시 불러온다
 
 // Enter = 보내기, Shift+Enter = 줄바꿈.
 // isComposing: 한글을 조합하는 중(받침 입력 등)의 Enter는 무시한다 → 마지막 글자가 잘리거나 두 번 보내지는 것 방지.
