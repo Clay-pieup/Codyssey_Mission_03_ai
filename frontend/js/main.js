@@ -2,17 +2,20 @@
  * 모든 화면에 공통인 두 가지: ① 탭 바꾸기 ② 잠든 서버 깨우기 안내(미션 제약: 콜드 스타트 대응).
  */
 
-// ① 탭: 누른 탭의 영역만 보이고 나머지는 숨긴다.
+// ① 탭: 고른 탭의 영역만 보이고 나머지는 숨긴다.
 //    지우지 않고 숨기기만 하므로 다른 탭에 다녀와도 채팅 내용이 그대로 남는다.
-document.querySelectorAll(".tab").forEach((tab) => {
-  tab.addEventListener("click", () => {
-    document.querySelectorAll(".tab").forEach((other) => other.classList.toggle("active", other === tab));
-    document.querySelectorAll(".panel").forEach((panel) => {
-      panel.hidden = panel.id !== `tab-${tab.dataset.tab}`;
-    });
-    // 어떤 탭이 열렸는지 알린다 → 데이터·기록 화면은 처음 열릴 때만 서버에서 불러온다(안 보는 화면은 요청 안 함)
-    document.dispatchEvent(new CustomEvent("tab-shown", { detail: tab.dataset.tab }));
+//    함수로 빼 둔 이유: 탭 버튼 클릭뿐 아니라 대화 기록에서 대화를 열 때(U11)도 채팅 탭으로 옮겨야 해서.
+function showTab(name) {
+  document.querySelectorAll(".tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.tab === name));
+  document.querySelectorAll(".panel").forEach((panel) => {
+    panel.hidden = panel.id !== `tab-${name}`;
   });
+  // 어떤 탭이 열렸는지 알린다 → 데이터 탭은 처음 한 번, 기록 탭은 열 때마다 서버에서 불러온다
+  document.dispatchEvent(new CustomEvent("tab-shown", { detail: name }));
+}
+
+document.querySelectorAll(".tab").forEach((tab) => {
+  tab.addEventListener("click", () => showTab(tab.dataset.tab));
 });
 
 // ② 서버 깨우기: 화면을 열자마자 /api/health를 부른다.

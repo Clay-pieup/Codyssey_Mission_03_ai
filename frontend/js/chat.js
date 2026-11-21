@@ -79,6 +79,16 @@ function startNewChat() {
   chatInput.focus();
 }
 
+// 대화 기록(U11)에서 고른 대화를 채팅 화면에 다시 그린다.
+// ID도 함께 기억하므로 이어서 물으면 같은 대화에 저장된다(U7 이어 대화 그대로).
+function openConversation(detail) {
+  chatState.conversationId = detail.id;
+  chatTitle.textContent = detail.title;
+  messagesBox.replaceChildren();
+  detail.messages.forEach((message) => addBubble(message.role === "user" ? "user" : "assistant", message.content));
+  chatInput.focus();
+}
+
 chatForm.addEventListener("submit", sendMessage);
 document.getElementById("new-chat").addEventListener("click", startNewChat);
 document.addEventListener("server-ready", updateSendButton);
